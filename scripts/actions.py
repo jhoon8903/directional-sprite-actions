@@ -14,6 +14,8 @@ import json
 import re
 import shutil
 import sys
+import os
+from tempfile import NamedTemporaryFile
 from pathlib import Path
 from typing import Any, Iterable, Tuple
 
@@ -63,12 +65,23 @@ def project_config(project: Path) -> Tuple[int, Tuple[str, ...], dict[str, Any]]
     return size, tuple(directions), character
 
 
+def catalog(project: Path) -> dict[str, Any]:
+    actions = read_json(project / "actions.json")
+    if not isinstance(actions, dict):
+        fail("actions.json must contain an object keyed by action ID")
+    for path in sorted((project / "actions").glob("*.json")):
+        name = require_identifier(path.stem, "Action")
+        if name in actions:
+            fail(f"Duplicate action '{name}' in actions.json and {path}")
+        actions[name] = read_json(path)
+    return actions
+
+
 def action_spec(project: Path, action: str) -> dict[str, Any]:
     require_identifier(action, "Action")
-    actions = read_json(project / "actions.json")
-    spec = actions.get(action) if isinstance(actions, dict) else None
+    spec = catalog(project).get(action)
     if not isinstance(spec, dict):
-        fail(f"Unknown action '{action}' in {project / 'actions.json'}")
+        fail(f"Unknown or invalid action '{action}'. See the list and add commands.")
     frames = spec.get("frames")
     if not isinstance(spec.get("loop"), bool) or not isinstance(frames, list) or not frames:
         fail(f"Action '{action}' must provide boolean loop and a non-empty frames list")
@@ -145,6 +158,46 @@ def command_init(args: argparse.Namespace) -> None:
     shutil.copyfile(PRESETS, project / "actions.json")
     (project / "character.json").write_text(json.dumps({"size": args.size, "directions": list(DIRECTIONS)}, indent=2) + "\n", encoding="utf-8")
     print(f"Initialized {project}")
+
+
+def command_list(args: argparse.Namespace) -> None:
+    for action in catalog(Path(args.project)):
+        print(action)
+
+
+def command_add(args: argparse.Namespace) -> None:
+    project = Path(args.project)
+    action = require_identifier(args.action, "Action")
+    actions = catalog(project)
+    frames = []
+    for token in args.frames:
+        name, separator, duration = token.rpartition(":")
+        if not separator or not duration.isascii() or not duration.isdigit() or int(duration) <= 0:
+            fail(f"Expected POSE:POSITIVE_MILLISECONDS, got {token!r}")
+        validate_frame_name(name, "Pose")
+        frames.append([name, int(duration)])
+    spec = {"loop": args.loop, "frames": frames}
+    if action in actions:
+        if actions[action] == spec:
+            print(f"Already registered: {action}")
+            return
+        fail(f"Action '{action}' already has a different definition")
+    folder = project / "actions"
+    folder.mkdir(exist_ok=True)
+    # Publish the completed definition without replacing a concurrent addition.
+    path = folder / f"{action}.json"
+    with NamedTemporaryFile(dir=folder, delete=False) as temp:
+        temp_path = Path(temp.name)
+    try:
+        temp_path.write_text(json.dumps(spec, indent=2) + "\n", encoding="utf-8")
+        try:
+            os.link(temp_path, path)
+        except FileExistsError:
+            if read_json(path) != spec:
+                fail(f"Conflicting definition at {path}")
+    finally:
+        temp_path.unlink(missing_ok=True)
+    print(f"Registered {action} at {path}")
 
 
 def command_plan(args: argparse.Namespace) -> None:
@@ -235,7 +288,7 @@ def command_import_sheet(args: argparse.Namespace) -> None:
             image = opened.copy()
     except OSError as error:
         fail(f"Unreadable PNG {source}: {error}")
-    tiles: list[Tuple[Path, Image.Image]] = []
+    tiles: dict[Path, Image.Image] = {}
     for direction in directions:
         for x, (name, _) in enumerate(spec["frames"]):
             if name.startswith("@"):
@@ -245,11 +298,13 @@ def command_import_sheet(args: argparse.Namespace) -> None:
             if tile.getchannel("A").getbbox() is None:
                 fail(f"Imported tile has no visible pixels: {direction}/{name}")
             destination = project / "frames" / args.action / direction / f"{name}.png"
-            tiles.append((destination, tile))
+            if destination in tiles and tiles[destination].tobytes() != tile.tobytes():
+                fail(f"Repeated pose has differing cells: {direction}/{name}")
+            tiles[destination] = tile
     # Prevalidate the complete transaction. Exact existing tiles make retries safe;
     # any different approved frame aborts before a new file is written.
     to_write: list[Tuple[Path, Image.Image]] = []
-    for destination, tile in tiles:
+    for destination, tile in tiles.items():
         if destination.exists():
             existing = validate_image(destination, size)
             if existing.tobytes() != tile.tobytes():
@@ -269,6 +324,15 @@ def parser() -> argparse.ArgumentParser:
     init.add_argument("project")
     init.add_argument("--size", type=int, default=64)
     init.set_defaults(func=command_init)
+    listing = commands.add_parser("list", help="list actions registered for this character")
+    listing.add_argument("project")
+    listing.set_defaults(func=command_list)
+    add = commands.add_parser("add", help="register a project action with ordered poses and timings")
+    add.add_argument("project")
+    add.add_argument("action")
+    add.add_argument("frames", nargs="+", metavar="POSE:MS")
+    add.add_argument("--loop", action="store_true", help="repeat the clip (default: play once)")
+    add.set_defaults(func=command_add)
     for name, function, help_text in (("plan", command_plan, "list required source frames"),
                                       ("build", command_build, "assemble validated sources"),
                                       ("import-sheet", command_import_sheet, "split a normalized RGBA source sheet")):

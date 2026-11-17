@@ -32,7 +32,19 @@ python scripts/actions.py plan "$P" attack
 
 기본 행은 **S, SW, W, NW, N, NE, E, SE**이며, 화면 아래가 S입니다. 64px 캐릭터의 기본 걷기 시트는 4열 × 8행으로 256×512px입니다. 임포트 입력은 투명 배경의 RGBA PNG이며 방향·프레임 순서는 프로젝트 설정과 일치해야 합니다.
 
-## 피격과 공격
+## 원하는 액션 등록
+게임에서 필요한 동작마다 ID, 키포즈 순서, 각 프레임의 시간(ms)을 정의합니다. 한 번 재생하는 것이 기본이며 반복 동작에는 `--loop`를 붙입니다.
+
+```sh
+python scripts/actions.py list "$P"
+python scripts/actions.py add "$P" stir-fry lift:130 toss:80 catch:140 --loop
+python scripts/actions.py add "$P" taste scoop:130 taste:220 @idle/stand:120
+python scripts/actions.py plan "$P" taste
+```
+
+추가한 정의는 캐릭터 폴더의 `actions/<ID>.json`에 저장됩니다. 이 파일에서 타이밍과 순서를 조정할 수 있습니다. 키포즈가 준비되면 모든 액션에 같은 build 명령을 사용합니다. 예를 들어 SE의 scoop과 taste를 그리면 복귀 프레임은 기존 idle/stand를 읽습니다.
+
+## 기본 프리셋
 
 | 액션 | 기본 타이밍 | 제작 방법 |
 |---|---|---|
