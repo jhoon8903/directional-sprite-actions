@@ -1,0 +1,6 @@
+{
+  "idle": {"loop": true, "frames": [["stand", 500]]},
+  "walk": {"loop": true, "frames": [["contact-a", 140], ["passing-a", 140], ["contact-b", 140], ["passing-b", 140]]},
+  "attack": {"loop": false, "frames": [["anticipation", 140], ["strike", 70], ["follow-through", 100], ["recover", 140]]},
+  "hit": {"loop": false, "frames": [["impact", 80], ["recoil", 100], ["settle", 120]]}
+}
