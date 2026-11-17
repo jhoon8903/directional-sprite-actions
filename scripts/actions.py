@@ -12,7 +12,6 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import shutil
 import sys
 import os
 from tempfile import NamedTemporaryFile
@@ -147,6 +146,7 @@ def iter_expected(project: Path, action: str) -> Iterable[Tuple[str, str, int, P
 
 def command_init(args: argparse.Namespace) -> None:
     project = Path(args.project).resolve()
+    require_identifier(args.motion, "Motion profile")
     if args.size <= 0:
         fail("--size must be a positive integer")
     if not PRESETS.is_file():
@@ -155,8 +155,17 @@ def command_init(args: argparse.Namespace) -> None:
     if existing:
         fail("Refusing to overwrite existing project configuration: " + ", ".join(map(str, existing)))
     project.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(PRESETS, project / "actions.json")
-    (project / "character.json").write_text(json.dumps({"size": args.size, "directions": list(DIRECTIONS)}, indent=2) + "\n", encoding="utf-8")
+    base = read_json(PRESETS)
+    motions = read_json(SCRIPT_ROOT / "assets" / "motions.json")
+    profile = motions.get(args.motion, {})
+    if args.motion == "biped":
+        actions = base
+    else:
+        actions = {"idle": base["idle"], "hit": base["hit"], **profile.get("actions", {})}
+    character = {"size": args.size, "directions": list(DIRECTIONS), "motion": args.motion,
+                 "anchor": args.anchor or profile.get("anchor", "ground")}
+    (project / "actions.json").write_text(json.dumps(actions, indent=2) + "\n", encoding="utf-8")
+    (project / "character.json").write_text(json.dumps(character, indent=2) + "\n", encoding="utf-8")
     print(f"Initialized {project}")
 
 
@@ -323,6 +332,8 @@ def parser() -> argparse.ArgumentParser:
     init = commands.add_parser("init", help="create a project configuration from bundled presets")
     init.add_argument("project")
     init.add_argument("--size", type=int, default=64)
+    init.add_argument("--motion", default="biped", help="movement profile or custom ID; see assets/motions.json")
+    init.add_argument("--anchor", choices=["ground", "center"], help="anchor for procedural hit squash")
     init.set_defaults(func=command_init)
     listing = commands.add_parser("list", help="list actions registered for this character")
     listing.add_argument("project")

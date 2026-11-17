@@ -32,6 +32,23 @@ python scripts/actions.py plan "$P" attack
 
 기본 행은 **S, SW, W, NW, N, NE, E, SE**이며, 화면 아래가 S입니다. 64px 캐릭터의 기본 걷기 시트는 4열 × 8행으로 256×512px입니다. 임포트 입력은 투명 배경의 RGBA PNG이며 방향·프레임 순서는 프로젝트 설정과 일치해야 합니다.
 
+## 대상의 움직임 선택
+
+`python scripts/actions.py init ./characters/wolf --size 64 --motion quadruped`로 시작합니다. 동물·몬스터라는 분류보다 실제 이동 방식을 고릅니다.
+
+| 프로필 | 이동 시안에 쓸 기본 액션 | 검수 포인트 |
+|---|---|---|
+| biped (기본) | walk | 지지발과 반대발 |
+| quadruped | trot | 대각선 발쌍이 교대로 닿는 속보 |
+| flying | flap | 날개 끝의 여백과 몸 중심 |
+| hopping | hop | 눌림·공중·착지 실루엣 |
+| slithering | slither | 몸통과 꼬리의 굴곡 전파 |
+| 임의 ID (예: mimic) | idle과 hit에서 시작해 add로 등록 | 뚜껑 경첩 등 대상 고유의 회전축 |
+
+프로필은 처음에 복사하는 동작 정의입니다. 실제 그림은 대상 원화와 포즈를 사용합니다. 걷다가 나는 드래곤도 한 폴더에서 trot, flap, bite 등을 함께 관리할 수 있습니다. 기존 프로젝트는 그대로 열고 add로 확장합니다. 방향 수와 순서는 character.json의 directions로 지정합니다.
+
+피격 초안의 눌림은 기본적으로 실루엣의 바닥을 고정합니다. flying은 실루엣 중심을 유지하며 초기화 시 `--anchor center` 또는 `--anchor ground`로 선택할 수 있습니다. 이 값은 절차적 눌림의 기준입니다. Unity 피벗은 프로젝트 임포트 설정에서 지정합니다.
+
 ## 원하는 액션 등록
 게임에서 필요한 동작마다 ID, 키포즈 순서, 각 프레임의 시간(ms)을 정의합니다. 한 번 재생하는 것이 기본이며 반복 동작에는 `--loop`를 붙입니다.
 

@@ -1,0 +1,106 @@
+{
+  "quadruped": {
+    "anchor": "ground",
+    "actions": {
+      "trot": {
+        "loop": true,
+        "frames": [
+          [
+            "diagonal-a",
+            110
+          ],
+          [
+            "transfer-a",
+            90
+          ],
+          [
+            "diagonal-b",
+            110
+          ],
+          [
+            "transfer-b",
+            90
+          ]
+        ]
+      }
+    }
+  },
+  "flying": {
+    "anchor": "center",
+    "actions": {
+      "flap": {
+        "loop": true,
+        "frames": [
+          [
+            "wings-up",
+            150
+          ],
+          [
+            "downstroke",
+            90
+          ],
+          [
+            "wings-low",
+            110
+          ],
+          [
+            "upstroke",
+            120
+          ]
+        ]
+      }
+    }
+  },
+  "hopping": {
+    "anchor": "ground",
+    "actions": {
+      "hop": {
+        "loop": true,
+        "frames": [
+          [
+            "compress",
+            120
+          ],
+          [
+            "launch",
+            70
+          ],
+          [
+            "airborne",
+            160
+          ],
+          [
+            "land",
+            90
+          ]
+        ]
+      }
+    }
+  },
+  "slithering": {
+    "anchor": "ground",
+    "actions": {
+      "slither": {
+        "loop": true,
+        "frames": [
+          [
+            "curve-a",
+            120
+          ],
+          [
+            "wave-a",
+            120
+          ],
+          [
+            "curve-b",
+            120
+          ],
+          [
+            "wave-b",
+            120
+          ]
+        ]
+      }
+    }
+  }
+}

@@ -20,6 +20,9 @@ def render(project, distance):
         raise ValueError("This generator expects the impact/recoil/settle hit preset.")
     size = character["size"]
     directions = character["directions"]
+    anchor = character.get("anchor", "ground")
+    if anchor not in ("ground", "center"):
+        raise ValueError("Expected ground or center for character.anchor")
     sheet = Image.new("RGBA", (3 * size, len(directions) * size))
     for row, direction in enumerate(directions):
         if direction not in BACK:
@@ -38,10 +41,10 @@ def render(project, distance):
             pose = sprite
             x, y = left + dx * step, top + dy * step
             if col == 0:
-                # Squash toward the original foot line on contact.
+                # Preserve the contact edge or the airborne silhouette center.
                 height = max(1, sprite.height - distance)
                 pose = sprite.resize((sprite.width, height), Image.Resampling.NEAREST)
-                y = bottom - height
+                y = bottom - height if anchor == "ground" else top + (sprite.height - height) // 2
             if x < 0 or y < 0 or x + pose.width > size or y + pose.height > size:
                 raise ValueError(f"{direction} clips at recoil {distance}px. Increase shared margins or reduce --distance.")
             sheet.alpha_composite(pose, (col * size + x, row * size + y))
