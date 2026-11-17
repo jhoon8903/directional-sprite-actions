@@ -1,18 +1,27 @@
 # Directional Sprite Actions
 
-승인한 캐릭터에 액션을 하나씩 추가하는 Codex 스킬과 독립 실행형 Python 도구입니다. 정지·걷기·공격·피격 프리셋을 제공하며 액션마다 다른 속도와 프레임 수를 사용할 수 있습니다. Mac에서 패킹과 피격 초안을 CPU로 처리합니다. 새 공격 그림은 연결된 이미지 도구로 제작하거나 직접 그린 PNG를 사용합니다.
+사람·동물·몬스터의 방향별 픽셀 포즈로 게임 액션을 제작하는 **Codex 스킬과 Python CLI**입니다. 승인된 PNG를 재사용해 원하는 방향만 먼저 검토하고, 전체 액션을 스프라이트시트로 묶습니다.
+
+| 준비할 것 | 얻는 것 |
+|---|---|
+| 같은 크기의 투명 RGBA PNG 프레임 또는 규격화한 시트 | 방향별 시트 PNG, 재생 미리보기 GIF, 프레임 위치·시간·반복 여부를 담은 JSON |
+| 방향별 정지 포즈 | CPU로 생성한 3프레임 피격 초안 |
+| 신규 액션의 이름과 타이밍 | 필요한 포즈 목록. 새 그림은 이미지 도구로 만들거나 직접 그려 등록합니다. |
 
 ## 설치
 
-Python 3.9 이상이 필요합니다. 이 폴더를 `~/.codex/skills/directional-sprite-actions` 또는 프로젝트의 `.agents/skills/directional-sprite-actions`에 놓으면 Codex에서 발견할 수 있습니다. Git bundle로 전달받았다면 다음처럼 복제합니다.
+Python 3.9 이상과 Pillow를 사용합니다. macOS와 Linux에서 저장소의 **Code → HTTPS** 주소를 복사한 후 실행하세요.
 
 ```sh
-git clone /path/to/directional-sprite-actions.bundle ~/.codex/skills/directional-sprite-actions
+git clone <복사한-저장소-URL> ~/.codex/skills/directional-sprite-actions
 cd ~/.codex/skills/directional-sprite-actions
 python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install -r requirements.txt
+python scripts/actions.py --help
 ```
+
+팀 프로젝트 안에 설치하려면 복제 경로를 `.agents/skills/directional-sprite-actions`로 바꾸세요. CLI만 쓸 때는 원하는 폴더에 복제해도 됩니다.
 
 새 Codex 채팅에서 이렇게 요청할 수 있습니다.
 
@@ -23,7 +32,7 @@ python -m pip install -r requirements.txt
 아래 명령은 스킬 루트에서 실행합니다. `P`는 게임 밖의 캐릭터 제작 폴더로 설정해도 됩니다.
 
 ```sh
-P=./characters/cook
+P=../cook-sprite-work
 python scripts/actions.py init "$P" --size 64
 python scripts/actions.py import-sheet "$P" walk /path/to/walk.png
 python scripts/actions.py build "$P" walk
@@ -91,10 +100,6 @@ python scripts/actions.py build "$P" hit
 ## Unity에서 사용
 
 `build/<액션>/sheet.png`를 Sprite (2D and UI) / Multiple / Point로 임포트하고 프로젝트 셀 크기로 자릅니다. `preview.gif`는 동작 확인용, `clip.json`은 방향·프레임 영역·재생 시간과 반복 여부를 전달하는 파일입니다. Unity Animation 창이나 프로젝트의 임포터에서 이 값을 적용합니다. 액션마다 발 기준점과 PPU를 통일합니다.
-
-## Git 공유
-
-프로젝트에 게임 원화, 모델 가중치나 계정 정보가 포함되지 않습니다. 복제한 저장소에 원하는 Git 원격을 연결해 팀과 공유할 수 있습니다. 공개 배포 시 코드에 허용할 사용·재배포 조건은 저장소 소유자가 정합니다.
 
 ## 승인한 프레임 참조
 
